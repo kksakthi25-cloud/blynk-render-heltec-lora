@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KKSAKTHIFARMS Smart Valve Controller</title>
+<meta name="description" content="KKSAKTHIFARMS smart valve controller — self-hosted on Render">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04080f;--glass:rgba(255,255,255,.04);--glass2:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --teal:#00e5c0;--blue:#0099ff;--red:#ff4757;--orange:#ffa502;--purple:#7c3aed;
+  --text:#e8f0fe;--dim:#7a8aaa;--muted:#3a4a6a;
+  --grad:linear-gradient(135deg,#00e5c0,#0099ff);
+  --grad2:linear-gradient(135deg,#00e5c0 0%,#0099ff 50%,#7c3aed 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;min-height:100vh;overflow-x:hidden;}
+.page{display:none;min-height:100vh;width:100%;}
+.page.active{display:flex;}
+
+/* ── LOGIN ── */
+#loginPage{flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 120% 80% at 50% -10%,rgba(0,229,192,.13),transparent 60%),
+             radial-gradient(ellipse 70% 60% at 85% 85%,rgba(0,153,255,.09),transparent 50%),var(--bg);
+  padding:24px;position:relative;overflow:hidden;}
+.bgc{position:absolute;border-radius:50%;filter:blur(70px);opacity:.15;animation:flt 8s ease-in-out infinite;}
+.bgc:nth-child(1){width:280px;height:280px;background:#00e5c0;top:-70px;left:-70px;}
+.bgc:nth-child(2){width:220px;height:220px;background:#0099ff;bottom:-50px;right:-50px;animation-delay:3s;}
+.bgc:nth-child(3){width:180px;height:180px;background:#7c3aed;top:40%;left:40%;animation-delay:5s;}
+@keyframes flt{0%,100%{transform:scale(1) translateY(0);}50%{transform:scale(1.1) translateY(-12px);}}
+.login-brand{text-align:center;margin-bottom:28px;position:relative;z-index:1;}
+.login-icon{font-size:52px;margin-bottom:8px;animation:glow 3s ease-in-out infinite;}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 10px rgba(0,229,192,.4));}50%{filter:drop-shadow(0 0 26px rgba(0,229,192,.8));}}
+.login-title{font-size:22px;font-weight:900;letter-spacing:.4px;
+  background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(28px);
+  border:1px solid var(--border2);border-radius:22px;padding:24px 20px;
+  width:100%;max-width:310px;position:relative;z-index:1;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);}
+.pin-label{text-align:center;font-size:10px;font-weight:700;color:var(--dim);
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px;}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted);transition:all .18s;}
+.pin-dot.filled{background:var(--teal);border-color:var(--teal);box-shadow:0 0 10px rgba(0,229,192,.5);}
+.pin-dot.error{background:var(--red);border-color:var(--red);animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.nkey{padding:14px 8px;background:rgba(255,255,255,.06);border:1px solid var(--border2);
+  border-radius:12px;text-align:center;cursor:pointer;font-family:Inter,sans-serif;
+  font-size:20px;font-weight:700;color:var(--text);transition:all .12s;user-select:none;}
+.nkey:active{transform:scale(.88);background:rgba(0,229,192,.1);border-color:rgba(0,229,192,.35);}
+.nkey.del{font-size:14px;color:var(--dim);}
+.nkey.enter{background:var(--grad);border:none;color:#001a10;font-size:13px;font-weight:800;}
+.pin-err{text-align:center;color:var(--red);font-size:11px;font-weight:600;margin-top:10px;min-height:16px;}
+.login-hint{text-align:center;margin-top:10px;font-size:10px;color:var(--muted);}
+
+/* ── SETUP (TOKEN) ── */
+#setupPage{flex-direction:column;align-items:center;justify-content:center;
+  background:var(--bg);padding:24px;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,153,255,.1),transparent);}
+.setup-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);
+  border:1px solid var(--border2);border-radius:22px;padding:26px 22px;
+  width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.4);}
+.setup-icon{font-size:38px;text-align:center;margin-bottom:8px;}
+.setup-title{font-size:16px;font-weight:800;text-align:center;margin-bottom:3px;
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.setup-sub{font-size:10px;color:var(--dim);text-align:center;margin-bottom:18px;line-height:1.5;}
+.setup-inp{width:100%;padding:11px 13px;background:rgba(0,0,0,.45);
+  border:1px solid var(--border2);border-radius:11px;color:var(--text);
+  font-family:Inter,monospace;font-size:12px;margin-bottom:10px;}
+.setup-inp:focus{outline:none;border-color:var(--teal);}
+.setup-btn{width:100%;padding:12px;background:var(--grad);border:none;border-radius:11px;
+  color:#001a10;font-family:Inter,sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:opacity .2s;}
+.setup-btn:active{opacity:.85;}
+.setup-note{font-size:10px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.7;}
+
+/* ── MAIN APP ── */
+#appPage{flex-direction:column;background:var(--bg);
+  background-image:radial-gradient(ellipse 80% 35% at 50% -5%,rgba(0,229,192,.06),transparent);}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;
+  background:rgba(4,8,15,.93);backdrop-filter:blur(20px);}
+.logo{display:flex;align-items:center;gap:8px;}
+.logo-icon{font-size:18px;filter:drop-shadow(0 0 6px rgba(0,229,192,.5));}
+.logo-txt h1{font-size:12px;font-weight:900;
+  background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-txt p{font-size:7px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:7px;}
+.pill{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:20px;
+  font-size:10px;font-weight:700;border:1px solid;}
+.pill.on{border-color:rgba(0,229,192,.3);color:var(--teal);background:rgba(0,229,192,.07);}
+.pill.off{border-color:rgba(255,71,87,.25);color:var(--red);background:rgba(255,71,87,.05);}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.icon-btn{background:rgba(255,255,255,.05);border:1px solid var(--border2);
+  border-radius:8px;padding:5px 8px;color:var(--dim);font-size:13px;cursor:pointer;transition:all .2s;}
+.icon-btn:hover{background:rgba(255,255,255,.09);}
+.content{flex:1;overflow-y:auto;padding:12px 12px 70px;}
+
+/* ── POWER BAR ── */
+.power-bar{display:flex;align-items:center;justify-content:space-between;
+  background:var(--glass);border:1px solid var(--border2);border-radius:14px;
+  padding:11px 14px;margin-bottom:11px;}
+.power-info .power-lbl{font-size:9px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.power-val{font-size:12px;font-weight:700;}
+.power-val.on{color:var(--teal);}
+.power-val.off{color:var(--red);}
+.power-sub{font-size:8px;color:var(--muted);margin-top:1px;}
+.pwr-btn{width:48px;height:48px;border-radius:50%;border:2px solid;
+  cursor:pointer;font-size:18px;background:transparent;transition:all .3s;}
+.pwr-btn.off{border-color:rgba(255,71,87,.4);color:var(--red);}
+.pwr-btn.on{border-color:rgba(0,229,192,.6);color:var(--teal);box-shadow:0 0 18px rgba(0,229,192,.22);}
+.pwr-btn:active{transform:scale(.86);}
+
+/* ── TOKEN BAR ── */
+.token-bar{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,153,255,.05);border:1px solid rgba(0,153,255,.18);
+  border-radius:12px;padding:9px 13px;margin-bottom:11px;gap:10px;}
+.token-lbl{font-size:10px;font-weight:700;color:var(--blue);}
+.token-val{font-size:9px;color:var(--dim);font-family:monospace;flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.token-edit{font-size:10px;font-weight:700;color:var(--blue);
+  background:rgba(0,153,255,.1);border:1px solid rgba(0,153,255,.3);
+  border-radius:6px;padding:4px 9px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;}
+
+/* ── WIFI CARD ── */
+.wifi-card{background:var(--glass);border:1px solid var(--border2);
+  border-radius:12px;padding:11px 13px;margin-bottom:11px;}
+.wh{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.wh-l{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.wh-sub{font-size:9px;color:var(--dim);font-weight:400;}
+.wh-ch{font-size:9px;color:var(--dim);transition:transform .25s;}
+.wifi-card.open .wh-ch{transform:rotate(180deg);}
+.wifi-body{display:none;margin-top:10px;}
+.wifi-card.open .wifi-body{display:block;}
+.winp{width:100%;padding:8px 11px;margin-bottom:7px;background:rgba(0,0,0,.4);
+  border:1px solid var(--border2);border-radius:8px;color:var(--text);
+  font-family:Inter,sans-serif;font-size:12px;}
+.winp:focus{outline:none;border-color:var(--blue);}
+.winp::placeholder{color:var(--muted);}
+.wbtn{width:100%;padding:9px;background:rgba(0,153,255,.1);
+  border:1px solid rgba(0,153,255,.3);border-radius:8px;color:var(--blue);
+  font-family:Inter,sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* ── MODE ── */
+.mode-card{background:var(--glass);border:1px solid var(--border);
+  border-radius:12px;padding:10px 13px;margin-bottom:11px;
+  display:flex;align-items:center;justify-content:space-between;}
+.mode-lbl{font-size:9px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.mode-val{font-size:13px;font-weight:700;}
+.tgrp{display:flex;background:rgba(0,0,0,.4);border-radius:8px;padding:3px;gap:2px;}
+.tbtn{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;
+  font-family:Inter,sans-serif;font-size:12px;font-weight:600;
+  background:transparent;color:var(--dim);transition:all .2s;}
+.tbtn.on{background:var(--grad);color:#001a10;box-shadow:0 2px 10px rgba(0,229,192,.25);}
+
+/* ── STATUS BANNER ── */
+.banner{background:linear-gradient(135deg,rgba(0,229,192,.05),rgba(0,153,255,.05));
+  border:1px solid rgba(0,229,192,.12);border-radius:12px;padding:11px 13px;
+  margin-bottom:11px;display:none;}
+.banner.show{display:block;}
+.ban-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.ban-title{font-size:11px;font-weight:700;}
+.ban-badge{font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;}
+.ban-badge.run{background:rgba(0,229,192,.12);color:var(--teal);}
+.ban-badge.idle{background:rgba(255,255,255,.05);color:var(--dim);}
+.ban-badge.paused{background:rgba(255,71,87,.1);color:var(--red);}
+.ban-st{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:2px;}
+.ban-st.paused{color:var(--red);}
+.ban-sub{font-size:10px;color:var(--dim);}
+.prog{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--grad);border-radius:2px;width:0;transition:width 1s linear;}
+
+/* ── JUMP BAR ── */
+.jump-bar{display:none;background:rgba(255,165,2,.04);
+  border:1px solid rgba(255,165,2,.16);border-radius:10px;padding:9px 11px;
+  margin-bottom:10px;align-items:center;gap:7px;flex-wrap:wrap;}
+.jump-bar.show{display:flex;}
+.jump-lbl{font-size:10px;font-weight:700;color:var(--orange);white-space:nowrap;}
+.jump-grid{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
+.jbtn{padding:4px 9px;border:1px solid rgba(255,165,2,.3);border-radius:6px;
+  background:transparent;color:var(--orange);font-family:Inter,sans-serif;
+  font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;}
+.jbtn.cur{background:rgba(255,165,2,.17);border-color:var(--orange);}
+.jbtn:active{transform:scale(.9);}
+
+/* ── VALVES ── */
+.sec{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.sec-t{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.sec-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;
+  background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border);}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;}
+.vc{background:var(--glass);border:1px solid var(--border);border-radius:11px;
+  padding:8px 3px;text-align:center;cursor:pointer;position:relative;overflow:hidden;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);user-select:none;}
+.vc::after{content:'';position:absolute;inset:0;border-radius:11px;
+  background:var(--grad);opacity:0;transition:opacity .3s;}
+.vc.open{border-color:rgba(0,229,192,.5);box-shadow:0 0 12px rgba(0,229,192,.16);}
+.vc.open::after{opacity:.08;}
+.vc.active{border-color:rgba(0,229,192,.9);box-shadow:0 0 18px rgba(0,229,192,.28);}
+.vc.active::after{opacity:.14;}
+.vc:active{transform:scale(.87);}
+.vc-n{font-size:9px;font-weight:700;color:var(--muted);position:relative;z-index:1;}
+.vc-i{font-size:18px;margin:3px 0 2px;position:relative;z-index:1;transition:transform .3s;}
+.vc.open .vc-i,.vc.active .vc-i{transform:scale(1.1);}
+.vc-s{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  position:relative;z-index:1;margin-bottom:2px;}
+.vc.open .vc-s,.vc.active .vc-s{color:var(--teal);}
+.vc-t{font-size:7px;font-weight:600;color:var(--muted);position:relative;z-index:1;
+  background:rgba(0,0,0,.3);border-radius:4px;padding:1px 4px;display:inline-block;}
+.vc.open .vc-t,.vc.active .vc-t{color:var(--teal);}
+
+/* ── BUTTONS ── */
+.brow{display:flex;gap:7px;margin-bottom:12px;}
+.btn{flex:1;padding:11px 6px;border:none;border-radius:10px;
+  font-family:Inter,sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn:active{transform:scale(.94);}
+.btn-start{background:var(--grad);color:#001a10;box-shadow:0 4px 14px rgba(0,229,192,.25);}
+.btn-stop{background:rgba(255,71,87,.09);border:1px solid rgba(255,71,87,.25);color:var(--red);}
+.btn-off{background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--dim);}
+
+/* ── TIMER SETTINGS ── */
+.acc{background:var(--glass);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:11px;}
+.acc-h{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;cursor:pointer;}
+.acc-h.open{background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);}
+.acc-hl{font-size:13px;font-weight:700;}
+.acc-ch{font-size:10px;color:var(--dim);transition:transform .25s;}
+.acc-h.open .acc-ch{transform:rotate(180deg);}
+.acc-b{display:none;padding:12px;}
+.acc-b.open{display:block;}
+.srow{display:flex;align-items:center;justify-content:space-between;
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.srow:last-of-type{border-bottom:none;}
+.slbl{font-size:11px;color:var(--dim);}
+.slbl small{display:block;font-size:9px;color:var(--muted);margin-top:1px;}
+.sinp{width:72px;padding:6px 8px;text-align:center;background:rgba(0,0,0,.4);
+  border:1px solid var(--border2);border-radius:7px;color:var(--text);
+  font-family:Inter,sans-serif;font-size:12px;font-weight:600;}
+.sinp:focus{outline:none;border-color:var(--teal);}
+.sbtn{margin-top:10px;width:100%;padding:10px;background:rgba(0,229,192,.08);
+  border:1px solid rgba(0,229,192,.2);border-radius:9px;color:var(--teal);
+  font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.hr{height:1px;background:var(--border);margin:0 0 11px;}
+
+/* ── MODALS ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:#081220;border:1px solid var(--border2);border-radius:20px;
+  padding:22px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal h3{font-size:15px;font-weight:800;margin-bottom:14px;}
+.modal input{width:100%;padding:10px 12px;margin-bottom:9px;background:rgba(0,0,0,.5);
+  border:1px solid var(--border2);border-radius:9px;color:var(--text);
+  font-family:Inter,sans-serif;font-size:13px;}
+.modal input:focus{outline:none;border-color:var(--teal);}
+.mrow{display:flex;gap:7px;margin-top:4px;}
+.mbtn{flex:1;padding:10px;border:none;border-radius:9px;
+  font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.mbtn-ok{background:var(--grad);color:#001a10;}
+.mbtn-cn{background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--dim);}
+.set-row{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.set-row:last-child{border-bottom:none;}
+.set-lbl{font-size:12px;color:var(--dim);}
+.set-lbl small{display:block;font-size:9px;color:var(--muted);margin-top:1px;}
+.set-btn{font-size:11px;font-weight:700;color:var(--orange);
+  background:rgba(255,165,2,.08);border:1px solid rgba(255,165,2,.2);
+  border-radius:7px;padding:5px 10px;cursor:pointer;font-family:Inter,sans-serif;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;z-index:1000;
+  transform:translateX(-50%) translateY(90px);
+  background:rgba(8,18,32,.97);border:1px solid var(--border2);
+  backdrop-filter:blur(20px);border-radius:11px;padding:9px 16px;
+  font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:rgba(0,229,192,.4);color:var(--teal);}
+.toast.err{border-color:rgba(255,71,87,.4);color:var(--red);}
+.toast.info{border-color:rgba(0,153,255,.4);color:var(--blue);}
+.toast.warn{border-color:rgba(255,165,2,.4);color:var(--orange);}
+</style>
+</head>
+<body>
+
+<!-- ======= LOGIN PAGE ======= -->
+<div class="page active" id="loginPage">
+  <div class="bgc"></div><div class="bgc"></div><div class="bgc"></div>
+  <div class="login-brand">
+    <div class="login-icon">🌿</div>
+    <div class="login-title">KKSAKTHIFARMS</div>
+    <div class="login-sub">Smart Valve Controller</div>
+  </div>
+  <div class="login-card">
+    <div class="pin-label">Enter PIN to unlock</div>
+    <div class="pin-dots" id="dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="numpad">
+      <div class="nkey" onclick="kp('1')">1</div>
+      <div class="nkey" onclick="kp('2')">2</div>
+      <div class="nkey" onclick="kp('3')">3</div>
+      <div class="nkey" onclick="kp('4')">4</div>
+      <div class="nkey" onclick="kp('5')">5</div>
+      <div class="nkey" onclick="kp('6')">6</div>
+      <div class="nkey" onclick="kp('7')">7</div>
+      <div class="nkey" onclick="kp('8')">8</div>
+      <div class="nkey" onclick="kp('9')">9</div>
+      <div class="nkey del" onclick="kd()">&#9003;</div>
+      <div class="nkey" onclick="kp('0')">0</div>
+      <div class="nkey enter" onclick="ke()">&#10003;</div>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="login-hint">Default PIN: <strong>1234</strong></div>
+  </div>
+</div>
+
+<!-- ======= SETUP PAGE (AUTH TOKEN) ======= -->
+<div class="page" id="setupPage">
+  <div class="setup-card">
+    <div class="setup-icon">🔗</div>
+    <div class="setup-title">Connect to IoT Platform</div>
+    <div class="setup-sub">Enter your device Auth Token to link<br>this app to your KKSAKTHIFARMS device</div>
+    <input class="setup-inp" id="tokenIn" type="text"
+           placeholder="Device Auth Token (UUID)" autocomplete="off" spellcheck="false">
+    <button class="setup-btn" onclick="saveToken()">Connect &rarr;</button>
+    <div class="setup-note">
+      &#9432; Get token from the dashboard:<br>
+      Add Device &rarr; Generate Auth Token
+    </div>
+  </div>
+</div>
+
+<!-- ======= MAIN APP PAGE ======= -->
+<div class="page" id="appPage">
+  <!-- Header -->
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-icon">🌿</div>
+      <div class="logo-txt">
+        <h1>KKSAKTHIFARMS</h1>
+        <p>Smart Valve Controller</p>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="pill off" id="pill"><div class="pill-dot"></div><span id="pillTxt">Offline</span></div>
+      <button class="icon-btn" id="settBtn" onclick="openSettings()" title="Settings">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Power Relay -->
+    <div class="power-bar">
+      <div class="power-info">
+        <div class="power-lbl">Main Power (440V Transformer)</div>
+        <div class="power-val off" id="pwrVal">OFF &mdash; Inactive</div>
+        <div class="power-sub">Relay on device &bull; Virtual Pin V7</div>
+      </div>
+      <button class="pwr-btn off" id="pwrBtn" onclick="togglePower()">&#9211;</button>
+    </div>
+
+    <!-- Token Bar -->
+    <div class="token-bar">
+      <div class="token-lbl">🔗 Auth Token</div>
+      <div class="token-val" id="tokenDisplay">No token saved</div>
+      <button class="token-edit" onclick="openTokenEdit()">Edit</button>
+    </div>
+
+    <!-- WiFi Setup -->
+    <div class="wifi-card" id="wifiCard">
+      <div class="wh" onclick="toggleWifi()">
+        <div class="wh-l">📶 WiFi Setup <span class="wh-sub">&nbsp;Send credentials to device</span></div>
+        <div class="wh-ch">&#9660;</div>
+      </div>
+      <div class="wifi-body">
+        <input class="winp" id="wSSID" type="text" placeholder="WiFi SSID" autocomplete="off">
+        <input class="winp" id="wPass" type="password" placeholder="WiFi Password">
+        <button class="wbtn" onclick="sendWifi()">📡 Send to Device</button>
+      </div>
+    </div>
+
+    <!-- Operating Mode -->
+    <div class="mode-card">
+      <div>
+        <div class="mode-lbl">Operating Mode</div>
+        <div class="mode-val" id="modeLbl">Standalone</div>
+      </div>
+      <div class="tgrp">
+        <button class="tbtn on" id="bMan" onclick="setMode(0)">Manual</button>
+        <button class="tbtn"    id="bAut" onclick="setMode(1)">Auto</button>
+      </div>
+    </div>
+
+    <!-- Sequence Status Banner -->
+    <div class="banner" id="banner">
+      <div class="ban-row">
+        <div class="ban-title">&#9654; Sequence Status</div>
+        <div class="ban-badge idle" id="badge">IDLE</div>
+      </div>
+      <div class="ban-st" id="banSt">Press Start to begin</div>
+      <div class="ban-sub" id="banSub">All valves idle</div>
+      <div class="prog"><div class="prog-fill" id="pf"></div></div>
+    </div>
+
+    <!-- Jump to Valve bar -->
+    <div class="jump-bar" id="jumpBar">
+      <div class="jump-lbl">&#9654; Jump:</div>
+      <div class="jump-grid" id="jumpGrid"></div>
+    </div>
+
+    <!-- Valve Grid -->
+    <div class="sec">
+      <div class="sec-t">KKSAKTHIFARMS &mdash; Valve Grid</div>
+      <div class="sec-tag" id="slaveTag">S1</div>
+    </div>
+    <div class="grid" id="vGrid"></div>
+
+    <!-- Auto Sequence Controls -->
+    <div class="brow" id="seqCtrl" style="display:none">
+      <button class="btn btn-start" id="startBtn" onclick="startSeq()">&#9654; Start Sequence</button>
+      <button class="btn btn-stop"  id="stopBtn"  onclick="stopSeq()">&#9632; Stop</button>
+    </div>
+
+    <!-- Manual Controls -->
+    <div id="manCtrl">
+      <div class="brow">
+        <button class="btn btn-off" onclick="allOff()">&#8855; All Valves OFF</button>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <!-- Timer Settings -->
+    <div class="acc">
+      <div class="acc-h" id="accH" onclick="toggleAcc()">
+        <div class="acc-hl">&#9201; Timer Settings</div>
+        <div class="acc-ch">&#9660;</div>
+      </div>
+      <div class="acc-b" id="accB">
+        <div class="srow">
+          <div class="slbl">Overlap time (sec)<small>Both valves open during transition</small></div>
+          <input class="sinp" type="number" id="iOvl" value="60" min="0" max="600">
+        </div>
+        <div id="durRows"></div>
+        <button class="sbtn" onclick="saveSettings()">&#128190; Save to Device</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /appPage -->
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="settModal">
+  <div class="modal">
+    <h3>&#9881; Settings</h3>
+    <div class="set-row">
+      <div class="set-lbl">Change PIN<small>4&ndash;8 digit security PIN</small></div>
+      <button class="set-btn" onclick="openPinChange()">Change</button>
+    </div>
+    <div class="set-row">
+      <div class="set-lbl">Auth Token<small>Device connection key</small></div>
+      <button class="set-btn" onclick="openTokenEdit()">Update</button>
+    </div>
+    <div class="set-row">
+      <div class="set-lbl">Lock Screen<small>Return to PIN screen</small></div>
+      <button class="set-btn" onclick="doLock()">Lock</button>
+    </div>
+    <div class="mrow" style="margin-top:14px">
+      <button class="mbtn mbtn-cn" onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change PIN Modal -->
+<div class="modal-bg" id="pinModal">
+  <div class="modal">
+    <h3>🔒 Change PIN</h3>
+    <input type="password" id="pinOld" placeholder="Current PIN" maxlength="8">
+    <input type="password" id="pinNew" placeholder="New PIN (4-8 digits)" maxlength="8">
+    <input type="password" id="pinCnf" placeholder="Confirm new PIN" maxlength="8">
+    <div class="mrow">
+      <button class="mbtn mbtn-cn" onclick="closePinModal()">Cancel</button>
+      <button class="mbtn mbtn-ok" onclick="savePin()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Token Modal -->
+<div class="modal-bg" id="tokenModal">
+  <div class="modal">
+    <h3>🔗 Auth Token</h3>
+    <input type="text" id="tokenNew" placeholder="Paste Auth Token here" autocomplete="off" spellcheck="false">
+    <div class="mrow">
+      <button class="mbtn mbtn-cn" onclick="closeTokenModal()">Cancel</button>
+      <button class="mbtn mbtn-ok" onclick="updateToken()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────
+const NUM     = 8;   // number of valves
+const DEF_PIN = '1234';
+
+// ─── State ────────────────────────────────────────────────
+let token     = localStorage.getItem('kk_tok') || '';
+let pin       = localStorage.getItem('kk_pin') || DEF_PIN;
+let pinBuf    = '';
+let mode      = 0;
+let seqOn     = false;
+let activeV   = 0;
+let powerOn   = false;
+let states    = new Array(NUM).fill(false);
+let durations = new Array(NUM).fill(2);  // minutes
+let overlap   = 60;  // seconds
+
+// ─── WebSocket state ──────────────────────────────────────
+let socket      = null;
+let reconnTimer = null;
+// Cache of last received vpin values (for replayed states on connect)
+const vpCache   = new Map();
+
+// ─── Page control ─────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── PIN keypad ───────────────────────────────────────────
+function kp(d) {
+  if (pinBuf.length >= 8) return;
+  pinBuf += d;
+  updateDots();
+  if (pinBuf.length === pin.length) setTimeout(ke, 180);
+}
+function kd() {
+  pinBuf = pinBuf.slice(0, -1);
+  updateDots();
+  document.getElementById('pinErr').textContent = '';
+}
+function ke() {
+  if (pinBuf === pin) {
+    pinBuf = ''; updateDots(false);
+    document.getElementById('pinErr').textContent = '';
+    if (!token) { showPage('setupPage'); }
+    else        { showPage('appPage'); initApp(); }
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+    document.getElementById('pinErr').textContent = 'Wrong PIN. Try again.';
+    setTimeout(() => {
+      document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+      pinBuf = ''; updateDots();
+      document.getElementById('pinErr').textContent = '';
+    }, 900);
+  }
+}
+function updateDots(fill = true) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd' + i);
+    d.classList.toggle('filled', fill && i < pinBuf.length);
+    d.classList.remove('error');
+  }
+}
+
+// ─── Token Setup ──────────────────────────────────────────
+function saveToken() {
+  const t = document.getElementById('tokenIn').value.trim();
+  if (!t || t.length < 10) { toast('Enter a valid token', 'err'); return; }
+  token = t;
+  localStorage.setItem('kk_tok', t);
+  updateTokenDisplay();
+  toast('Token saved!', 'ok');
+  showPage('appPage');
+  initApp();
+}
+function updateTokenDisplay() {
+  const el = document.getElementById('tokenDisplay');
+  el.textContent = token ? token.slice(0,8) + '…' + token.slice(-4) : 'No token saved';
+}
+
+// ─── WebSocket helpers ────────────────────────────────────
+
+/** Send a virtual pin write over the WebSocket */
+function bSet(pin, val) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: 'vpin_write', pin, value: val }));
+  } else {
+    toast('Device offline', 'warn');
+  }
+  return Promise.resolve();
+}
+
+/** Get last known cached value for a virtual pin */
+function bGetCached(pin) {
+  return vpCache.get(pin) ?? null;
+}
+
+// ─── WebSocket connect ────────────────────────────────────
+function wsConnect() {
+  clearTimeout(reconnTimer);
+  if (socket && socket.readyState < 2) socket.close();
+
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url   = proto + '//' + location.host;
+
+  socket = new WebSocket(url);
+
+  socket.addEventListener('open', () => {
+    socket.send(JSON.stringify({ type: 'auth', token, clientType: 'dashboard' }));
+  });
+
+  socket.addEventListener('message', evt => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+
+    switch (msg.type) {
+      case 'auth_ok':
+        setOnline(true);
+        toast('Connected to device!', 'ok');
+        break;
+
+      case 'auth_error':
+        setOnline(false);
+        toast('Auth failed: ' + msg.message, 'err');
+        break;
+
+      case 'device_status':
+        setOnline(msg.online);
+        if (!msg.online) toast('Device went offline', 'warn');
+        else toast('Device online!', 'ok');
+        break;
+
+      case 'vpin_update':
+        handleVPinUpdate(msg.pin, msg.value);
+        break;
+
+      case 'error':
+        toast(msg.message, 'err');
+        break;
+    }
+  });
+
+  socket.addEventListener('close', () => {
+    setOnline(false);
+    reconnTimer = setTimeout(wsConnect, 5000);
+  });
+
+  socket.addEventListener('error', () => setOnline(false));
+}
+
+// ─── Virtual pin update handler ───────────────────────────
+function handleVPinUpdate(vpin, value) {
+  vpCache.set(vpin, value);
+
+  switch (vpin) {
+    case 'V0':
+      applyMode(parseInt(value));
+      break;
+
+    case 'V4': {
+      // Status string: "RUN|3|10100010|1" → state|activeValve|bitmask|power
+      const p = String(value).replace(/"/g,'').trim().split('|');
+      if (p.length >= 3) {
+        const st = p[0], vn = parseInt(p[1]), bm = p[2];
+        const pwr = p.length >= 4 ? parseInt(p[3]) : -1;
+        for (let i = 0; i < NUM && i < bm.length; i++) setValveUI(i, bm[i] === '1');
+        if (pwr >= 0) applyPower(pwr === 1);
+        activeV = vn;
+        seqOn   = (st === 'RUN' || st === 'OVR');
+        updateBanner(st, vn, vpCache.get('V5') || 0);
+        updateJumpBar();
+      }
+      break;
+    }
+
+    case 'V5':
+      // remaining time update — re-run banner with cached V4 if available
+      if (vpCache.has('V4')) handleVPinUpdate('V4', vpCache.get('V4'));
+      break;
+
+    case 'V7':
+      applyPower(parseInt(value) === 1);
+      break;
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────
+function initApp() {
+  buildGrid();
+  buildDurRows();
+  buildJumpGrid();
+  updateTokenDisplay();
+  toast('Connecting…', 'info');
+  wsConnect();
+}
+
+// ─── Power ────────────────────────────────────────────────
+function togglePower() {
+  const n = !powerOn;
+  applyPower(n);
+  bSet('V7', n ? 1 : 0).then(() => toast('Power ' + (n ? 'ON' : 'OFF'), n ? 'ok' : 'warn'));
+}
+function applyPower(on) {
+  powerOn = on;
+  document.getElementById('pwrBtn').className = 'pwr-btn ' + (on ? 'on' : 'off');
+  const v = document.getElementById('pwrVal');
+  v.className = 'power-val ' + (on ? 'on' : 'off');
+  v.textContent = on ? 'ON \u2014 Transformer Active' : 'OFF \u2014 Inactive';
+}
+
+// ─── Valve grid ───────────────────────────────────────────
+function buildGrid() {
+  const g = document.getElementById('vGrid');
+  g.innerHTML = '';
+  for (let i = 0; i < NUM; i++) {
+    const d = document.createElement('div');
+    d.className = 'vc'; d.id = 'v' + i;
+    d.innerHTML = '<div class="vc-n">V' + (i+1) + '</div>' +
+                  '<div class="vc-i">🔵</div>' +
+                  '<div class="vc-s">CLOSED</div>' +
+                  '<div class="vc-t" id="vt' + i + '">' + durations[i] + 'min</div>';
+    d.onclick = () => toggleValve(i);
+    g.appendChild(d);
+  }
+}
+function setValveUI(i, open) {
+  states[i] = open;
+  const c = document.getElementById('v' + i);
+  if (!c) return;
+  c.classList.toggle('open', open);
+  c.querySelector('.vc-i').textContent = open ? '🟢' : '🔵';
+  c.querySelector('.vc-s').textContent = open ? 'OPEN' : 'CLOSED';
+}
+function toggleValve(i) {
+  if (mode !== 0) { toast('Switch to Manual mode first', 'info'); return; }
+  const ns = !states[i];
+  setValveUI(i, ns);
+  bSet('V1', 'V' + (i+1) + ':' + (ns ? 'ON' : 'OFF'))
+    .then(() => toast('Valve ' + (i+1) + ' ' + (ns ? 'OPENED' : 'CLOSED'), ns ? 'ok' : 'info'));
+}
+async function allOff() {
+  for (let i = 0; i < NUM; i++) setValveUI(i, false);
+  await bSet('V1', 'ALL:OFF');
+  toast('All valves closed', 'ok');
+}
+
+// ─── Jump bar ─────────────────────────────────────────────
+function buildJumpGrid() {
+  const g = document.getElementById('jumpGrid');
+  g.innerHTML = '';
+  for (let i = 0; i < NUM; i++) {
+    const b = document.createElement('button');
+    b.className = 'jbtn'; b.id = 'jb' + i;
+    b.textContent = 'V' + (i+1);
+    b.onclick = () => jumpTo(i);
+    g.appendChild(b);
+  }
+}
+function updateJumpBar() {
+  document.getElementById('jumpBar').classList.toggle('show', mode === 1 && seqOn);
+  document.querySelectorAll('.jbtn').forEach((b, i) => b.classList.toggle('cur', i === activeV - 1));
+}
+function jumpTo(i) {
+  bSet('V8', i + 1).then(() => toast('Jumping to Valve ' + (i+1), 'warn'));
+}
+
+// ─── Banner ───────────────────────────────────────────────
+function updateBanner(st, vn, rem) {
+  const banner = document.getElementById('banner');
+  if (mode !== 1) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  const badge  = document.getElementById('badge');
+  const banSt  = document.getElementById('banSt');
+  const banSub = document.getElementById('banSub');
+  const pf     = document.getElementById('pf');
+  if (st === 'PAUSED') {
+    badge.textContent  = 'PAUSED'; badge.className = 'ban-badge paused';
+    banSt.className    = 'ban-st paused';
+    banSt.textContent  = '!! DEVICE OFFLINE -- Sequence Paused';
+    banSub.textContent = 'Waiting for device to reconnect...';
+    pf.style.width     = '0%';
+  } else if (seqOn) {
+    const total = (durations[vn-1] || 2) * 60;
+    const pct   = total > 0 ? Math.min(100, ((total - rem) / total) * 100) : 0;
+    const m2    = Math.floor(rem / 60), s2 = rem % 60;
+    pf.style.width    = pct + '%';
+    badge.className   = 'ban-badge run';
+    badge.textContent = st === 'OVR' ? 'OVERLAP' : 'RUNNING';
+    banSt.className   = 'ban-st';
+    banSt.textContent = st === 'OVR'
+      ? 'Overlap \u2192 V' + vn + ' | ' + rem + 's'
+      : 'Valve ' + vn + ' | ' + m2 + 'm ' + s2 + 's left';
+    banSub.textContent = 'Sequence running (looping all valves)';
+    document.querySelectorAll('.vc').forEach((c, i) => {
+      c.classList.toggle('active', i === vn - 1);
+      c.style.opacity = (i === vn - 1) ? '1' : '0.45';
+    });
+    updateValveTimers(st, vn, rem);
+  } else {
+    badge.textContent  = 'IDLE'; badge.className = 'ban-badge idle';
+    banSt.className    = 'ban-st';
+    banSt.textContent  = 'Press Start to begin';
+    banSub.textContent = 'All valves idle';
+    pf.style.width     = '0%';
+    document.querySelectorAll('.vc').forEach(c => { c.classList.remove('active'); c.style.opacity = '0.55'; });
+  }
+}
+function updateValveTimers(st, vn, rem) {
+  for (let i = 0; i < NUM; i++) {
+    const el = document.getElementById('vt' + i);
+    if (!el) continue;
+    if (seqOn && i === vn - 1) {
+      const m2 = Math.floor(rem / 60), s2 = rem % 60;
+      el.textContent = st === 'OVR' ? 'OVR ' + rem + 's' : m2 + 'm' + s2 + 's';
+    } else {
+      el.textContent = durations[i] === 0 ? 'skip' : durations[i] + 'min';
+    }
+  }
+}
+function refreshLabel(i) {
+  const el = document.getElementById('vt' + i);
+  if (el) el.textContent = durations[i] === 0 ? 'skip' : durations[i] + 'min';
+}
+
+// ─── Mode ─────────────────────────────────────────────────
+function setMode(m) { applyMode(m); bSet('V0', m); }
+function applyMode(m) {
+  mode = m;
+  document.getElementById('bMan').classList.toggle('on', m === 0);
+  document.getElementById('bAut').classList.toggle('on', m === 1);
+  document.getElementById('modeLbl').textContent = m === 0 ? 'Standalone (Manual)' : 'Time-Based Auto';
+  document.getElementById('seqCtrl').style.display = m === 1 ? 'flex' : 'none';
+  document.getElementById('manCtrl').style.display  = m === 0 ? 'block' : 'none';
+  document.getElementById('banner').classList.toggle('show', m === 1);
+  document.querySelectorAll('.vc').forEach(c => {
+    c.style.opacity = m === 1 ? '0.55' : '1';
+    c.style.cursor  = m === 1 ? 'default' : 'pointer';
+  });
+  updateJumpBar();
+}
+
+// ─── Sequence ─────────────────────────────────────────────
+function startSeq() {
+  bSet('V2', 1).then(() => { seqOn = true; toast('Sequence started!', 'ok'); updateJumpBar(); });
+}
+function stopSeq() {
+  bSet('V2', 0).then(() => { seqOn = false; toast('Sequence stopped', 'warn'); updateJumpBar(); });
+}
+
+// ─── Timer settings ───────────────────────────────────────
+function buildDurRows() {
+  const c = document.getElementById('durRows');
+  c.innerHTML = '';
+  for (let i = 0; i < NUM; i++) {
+    const row = document.createElement('div');
+    row.className = 'srow';
+    row.innerHTML = '<div class="slbl">Valve ' + (i+1) + ' (min)<small>0 = skip this valve</small></div>' +
+      '<input class="sinp" type="number" id="d' + i + '" value="' + durations[i] +
+      '" min="0" max="999" oninput="durations[' + i + ']=parseInt(this.value)||0;refreshLabel(' + i + ')">';
+    c.appendChild(row);
+  }
+}
+async function saveSettings() {
+  overlap = parseInt(document.getElementById('iOvl').value) || 60;
+  for (let i = 0; i < NUM; i++) durations[i] = parseInt(document.getElementById('d' + i).value) || 0;
+  const payload = [overlap, ...durations, ...new Array(8).fill(0)].join(',');
+  await bSet('V3', payload);
+  for (let i = 0; i < NUM; i++) refreshLabel(i);
+  toast('Settings saved to device!', 'ok');
+}
+function toggleAcc() {
+  const b = document.getElementById('accB'), h = document.getElementById('accH');
+  const o = b.classList.toggle('open'); h.classList.toggle('open', o);
+}
+
+// ─── WiFi ─────────────────────────────────────────────────
+function toggleWifi() { document.getElementById('wifiCard').classList.toggle('open'); }
+async function sendWifi() {
+  const ssid = document.getElementById('wSSID').value.trim();
+  const pass = document.getElementById('wPass').value.trim();
+  if (!ssid) { toast('Enter SSID', 'err'); return; }
+  await bSet('V6', ssid + '|' + pass);
+  toast('WiFi credentials sent!', 'ok');
+  document.getElementById('wifiCard').classList.remove('open');
+}
+
+// ─── Settings modal ───────────────────────────────────────
+function openSettings()  { document.getElementById('settModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settModal').classList.remove('show'); }
+function openPinChange() { closeSettings(); document.getElementById('pinModal').classList.add('show'); }
+function closePinModal() { document.getElementById('pinModal').classList.remove('show'); }
+function openTokenEdit() {
+  closeSettings();
+  document.getElementById('tokenNew').value = '';
+  document.getElementById('tokenModal').classList.add('show');
+}
+function closeTokenModal() { document.getElementById('tokenModal').classList.remove('show'); }
+
+function savePin() {
+  const o = document.getElementById('pinOld').value;
+  const n = document.getElementById('pinNew').value;
+  const c = document.getElementById('pinCnf').value;
+  if (o !== pin)        { toast('Current PIN is wrong', 'err'); return; }
+  if (n.length < 4)     { toast('PIN must be 4+ digits', 'err'); return; }
+  if (!/^\d+$/.test(n)) { toast('Digits only', 'err'); return; }
+  if (n !== c)          { toast('PINs do not match', 'err'); return; }
+  pin = n; localStorage.setItem('kk_pin', n);
+  ['pinOld','pinNew','pinCnf'].forEach(id => document.getElementById(id).value = '');
+  closePinModal(); toast('PIN changed!', 'ok');
+}
+function updateToken() {
+  const t = document.getElementById('tokenNew').value.trim();
+  if (!t || t.length < 10) { toast('Enter valid token', 'err'); return; }
+  token = t; localStorage.setItem('kk_tok', t);
+  updateTokenDisplay();
+  closeTokenModal(); toast('Token updated — reconnecting…', 'ok');
+  if (socket) socket.close();
+  wsConnect();
+}
+function doLock() {
+  closeSettings();
+  if (socket) { socket.close(); socket = null; }
+  clearTimeout(reconnTimer);
+  pinBuf = ''; updateDots(false);
+  document.getElementById('pinErr').textContent = '';
+  showPage('loginPage');
+}
+
+// ─── Status pill ──────────────────────────────────────────
+function setOnline(ok) {
+  const p = document.getElementById('pill'), t = document.getElementById('pillTxt');
+  p.className = 'pill ' + (ok ? 'on' : 'off');
+  t.textContent = ok ? 'Online' : 'Offline';
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let toastTmr;
+function toast(msg, type) {
+  type = type || 'ok';
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast ' + type + ' show';
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ─── Boot ─────────────────────────────────────────────────
+window.addEventListener('load', () => showPage('loginPage'));
+</script>
+</body>
+</html>
